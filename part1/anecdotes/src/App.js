@@ -8,14 +8,39 @@ const App = () => {
     'Any fool can write code that a computer can understand. Good programmers write code that humans can understand.',
     'Premature optimization is the root of all evil.',
     'Debugging is twice as hard as writing the code in the first place. Therefore, if you write the code as cleverly as possible, you are, by definition, not smart enough to debug it.',
-    'Programming without an extremely heavy use of console.log is same as if a doctor would refuse to use x-rays or blood tests when diagnosing patients'
+    'Programming without an extremely heavy use of console.log is same as if a doctor would refuse to use x-rays or blood tests when diagnosing patients',
   ]
-   
+
   const [selected, setSelected] = useState(0)
+  const [votes, setVote] = useState(Array(7).fill(0))
+
+  const rand = () => {
+    const min = Math.ceil(0)
+    const max = Math.floor(6)
+    return Math.floor(Math.random() * (max - min + 1)) + min
+  }
+
+  const handleVote = () => {
+    const newVote = [...votes]
+    newVote[selected] += 1
+    setVote(newVote)
+  }
+
+  const getMax = () => votes.indexOf(Math.max(...votes))
+
+  console.log(selected)
+  console.log(votes)
 
   return (
     <div>
-      {anecdotes[selected]}
+      <h1>Anecdote of the day</h1>
+      <p>{ anecdotes[selected] }</p>
+      <p>has { votes[selected] } votes</p>
+      <button onClick={() => setSelected(rand)}>next anecdote</button>
+      <button onClick={() => handleVote()}>votes</button>
+      <h1>Anecdote with most votes</h1>
+      <p>{ anecdotes[getMax()] }</p>
+      <p>has { votes[getMax()] } votes</p>
     </div>
   )
 }
