@@ -12,12 +12,27 @@ const App = () => {
 
   const addPerson = (event) => {
     event.preventDefault()
-    const newPerson = {
-      name: newName
+    if (checkExistence(newName)) {
+      window.alert(`${newName} is already added to phonebook`)
+      setNewName('')
+    } else {
+      const newPerson = {
+        name: newName
+      }
+      setPersons(persons.concat(newPerson))
+      setNewName('')
     }
+  }
 
-    setPersons(persons.concat(newPerson))
-    setNewName('')
+  const checkExistence = (nameToCheck) => {
+    const filteredPersons = persons.filter(person => 
+      nameToCheck === person.name
+    ) 
+    if (filteredPersons.length === 0) {
+      return false
+    } else {
+      return true
+    }
   }
 
   return (
@@ -25,7 +40,7 @@ const App = () => {
       <h2>Phonebook</h2>
       <form>
         <div>
-          name: <input value={newName} onChange={handleNameChange}/>
+          name: <input value={newName} onChange={handleNameChange} />
         </div>
         <div>
           <button type="submit" onClick={addPerson}>add</button>
@@ -33,7 +48,7 @@ const App = () => {
       </form>
       <h2>Numbers</h2>
       <ul>
-        {persons.map((person) => 
+        {persons.map(person =>
           <li key={person.name}>{person.name}</li>
         )}
       </ul>
