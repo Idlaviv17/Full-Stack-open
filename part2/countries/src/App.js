@@ -6,6 +6,8 @@ import Filter from './components/Filter'
 const App = () => {
   const [countries, setCountries] = useState([])
   const [filter, setFilter] = useState('')
+  const [country, setCountry] = useState(countries[0])
+  const [filterChange, setFilterChange] = useState(true)
 
   useEffect(() => {
     axios
@@ -19,11 +21,20 @@ const App = () => {
 
   const handleFilterChange = (event) => {
     setFilter(event.target.value)
+    setFilterChange(true)
+  }
+
+  const handleOnClick = (country) => {
+    setCountry(country)
+    setFilterChange(false)
   }
 
   const showCountries = () => {
-    return filteredCountries.map(country =>
-      <p key={country.name.common}>{country.name.common}</p>
+    return filteredCountries.map((country) =>
+      <p key={country.name.common}>
+        {country.name.common} {' '}
+        <button onClick={() => handleOnClick(country)}>show</button>
+      </p>
     )
   }
 
@@ -33,11 +44,13 @@ const App = () => {
         filter={filter}
         handleFilterChange={handleFilterChange}
       />
-      {filteredCountries.length > 10
-        ? <p>Too many matches, specify another filter</p>
-        : filteredCountries.length === 1
-          ? <Country country={filteredCountries[0]} />
-          : showCountries()
+      {country === undefined || filterChange
+        ? filteredCountries.length > 10
+          ? <p>Too many matches, specify another filter</p>
+          : filteredCountries.length === 1
+            ? <Country country={filteredCountries[0]} />
+            : showCountries()
+        : <Country country={country} />
       }
     </div>
   );
