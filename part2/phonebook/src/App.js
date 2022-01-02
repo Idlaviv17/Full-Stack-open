@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react'
 import Persons from './components/Persons'
 import PersonForm from './components/PersonForm'
 import Filter from './components/Filter'
+import Notification from './components/Notification'
 import personService from './services/persons'
 
 const App = () => {
@@ -9,19 +10,22 @@ const App = () => {
   const [newName, setNewName] = useState('')
   const [newNumber, setNewNumber] = useState('')
   const [filter, setFilter] = useState('')
+  const [message, setMessage] = useState(null)
 
   useEffect(() => {
-    personService
-      .getAll()
-      .then(initialPersons => {
-        setPersons(initialPersons)
-      })
+    personService.getAll().then(initialPersons => {
+      setPersons(initialPersons)
+    })
   }, [])
 
   const addPerson = event => {
     event.preventDefault()
     if (!checkExistence(newName)) {
-      if (window.confirm(`${newName} is already added to the phonebook, replace the old number with a new one?`)) {
+      if (
+        window.confirm(
+          `${newName} is already added to the phonebook, replace the old number with a new one?`
+        )
+      ) {
         updatePerson(newName)
       }
       setNewNumber('')
@@ -32,24 +36,29 @@ const App = () => {
         number: newNumber,
       }
 
-      personService
-        .create(newPerson)
-        .then(returnedPerson => {
-          setPersons(persons.concat(returnedPerson))
-          setNewNumber('')
-          setNewName('')
+      personService.create(newPerson).then(returnedPerson => {
+        setPersons(persons.concat(returnedPerson))
+        setNewNumber('')
+        setNewName('')
+        setMessage({
+          content: `Added ${newPerson.name}`,
+          action: 'update'
         })
+        setTimeout(() => {
+          setMessage(null)
+        }, 3000)
+      })
     }
   }
 
   const deletePerson = id => {
     const person = persons.find(n => n.id === id)
     if (window.confirm(`Delete ${person.name}?`)) {
-      personService
-        .remove(id)
-        .then(returnedPerson => {
-          setPersons(persons.map(person => person.id !== id ? person : returnedPerson))
-        })
+      personService.remove(id).then(returnedPerson => {
+        setPersons(
+          persons.map(person => (person.id !== id ? person : returnedPerson))
+        )
+      })
     }
   }
 
@@ -60,16 +69,29 @@ const App = () => {
     personService
       .update(changedPerson.id, changedPerson)
       .then(returnedPerson => {
-        setPersons(persons.map(person =>
-          person.id !== changedPerson.id ? person : returnedPerson
-        ))
+        setPersons(
+          persons.map(person =>
+            person.id !== changedPerson.id ? person : returnedPerson
+          )
+        )
+        setMessage({
+          content: `Updated ${changedPerson.name}'s number`,
+          action: 'update'
+        })
+        setTimeout(() => {
+          setMessage(null)
+        }, 3000)
       })
       .catch(error => {
-        alert(
-          `the person '${person.content}' was already deleted from server`
-        )
+        setMessage({
+          content: `Information of ${person.name} has already been removed from server`,
+          action: 'error'
+        })
+        setTimeout(() => {
+          setMessage(null)
+        }, 3000)
+        console.log(`the person '${person.name}' was already deleted from server`)
         setPersons(persons.filter(n => n.id !== person.id))
-        console.log(error, error.stack.split("\n"))
       })
   }
 
@@ -103,10 +125,8 @@ const App = () => {
   return (
     <div>
       <h2>Phonebook</h2>
-      <Filter
-        filter={filter}
-        handleFilterChange={handleFilterChange}
-      />
+      <Notification message={message} />
+      <Filter filter={filter} handleFilterChange={handleFilterChange} />
       <h2>add a new</h2>
       <PersonForm
         newName={newName}
@@ -116,10 +136,7 @@ const App = () => {
         addPerson={addPerson}
       />
       <h2>Numbers</h2>
-      <Persons
-        persons={filteredPersons}
-        deletePerson={deletePerson}
-      />
+      <Persons persons={filteredPersons} deletePerson={deletePerson} />
     </div>
   )
 }
