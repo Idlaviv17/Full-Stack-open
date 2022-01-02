@@ -1,10 +1,8 @@
 import React, { useState, useEffect } from 'react'
-import axios from 'axios'
 import Persons from './components/Persons'
 import PersonForm from './components/PersonForm'
 import Filter from './components/Filter'
-
-export const AppContext = React.createContext()
+import personService from './services/persons'
 
 const App = () => {
   const [persons, setPersons] = useState([])
@@ -13,58 +11,93 @@ const App = () => {
   const [filter, setFilter] = useState('')
 
   useEffect(() => {
-    console.log('effect')
-    axios
-      .get('http://localhost:3001/persons')
-      .then(response => {
-        console.log('promise fulfilled')
-        setPersons(response.data)
+    personService
+      .getAll()
+      .then(initialPersons => {
+        setPersons(initialPersons)
       })
   }, [])
 
-  const filteredPersons = persons.filter(person => {
-    return person.name.toLowerCase().includes(filter.toLowerCase())
-  })
-
-  const handleNameChange = (event) => {
-    setNewName(event.target.value)
-  }
-
-  const handleNumberChange = (event) => {
-    setNewNumber(event.target.value)
-  }
-
-  const handleFilterChange = (event) => {
-    setFilter(event.target.value)
-  }
-
-  const addPerson = (event) => {
+  const addPerson = event => {
     event.preventDefault()
-    if (checkExistence(newName)) {
-      window.alert(`${newName} is already added to phonebook`)
+    if (!checkExistence(newName)) {
+      if (window.confirm(`${newName} is already added to the phonebook, replace the old number with a new one?`)) {
+        updatePerson(newName)
+      }
       setNewNumber('')
       setNewName('')
     } else {
       const newPerson = {
         name: newName,
         number: newNumber,
-        id: persons.length + 1
       }
-      setPersons(persons.concat(newPerson))
-      setNewNumber('')
-      setNewName('')
+
+      personService
+        .create(newPerson)
+        .then(returnedPerson => {
+          setPersons(persons.concat(returnedPerson))
+          setNewNumber('')
+          setNewName('')
+        })
     }
   }
 
-  const checkExistence = (nameToCheck) => {
-    const filteredPersons = persons.filter(person =>
-      nameToCheck === person.name
-    )
-    if (filteredPersons.length === 0) {
-      return false
-    } else {
-      return true
+  const deletePerson = id => {
+    const person = persons.find(n => n.id === id)
+    if (window.confirm(`Delete ${person.name}?`)) {
+      personService
+        .remove(id)
+        .then(returnedPerson => {
+          setPersons(persons.map(person => person.id !== id ? person : returnedPerson))
+        })
     }
+  }
+
+  const updatePerson = personName => {
+    const person = persons.find(n => n.name === personName)
+    const changedPerson = { ...person, number: newNumber }
+
+    personService
+      .update(changedPerson.id, changedPerson)
+      .then(returnedPerson => {
+        setPersons(persons.map(person =>
+          person.id !== changedPerson.id ? person : returnedPerson
+        ))
+      })
+      .catch(error => {
+        alert(
+          `the person '${person.content}' was already deleted from server`
+        )
+        setPersons(persons.filter(n => n.id !== person.id))
+        console.log(error, error.stack.split("\n"))
+      })
+  }
+
+  const handleNameChange = event => {
+    setNewName(event.target.value)
+  }
+
+  const handleNumberChange = event => {
+    setNewNumber(event.target.value)
+  }
+
+  const handleFilterChange = event => {
+    setFilter(event.target.value)
+  }
+
+  const filteredPersons = persons.filter(person => {
+    try {
+      return person.name.toLowerCase().includes(filter.toLowerCase())
+    } catch (error) {
+      console.log('Undefined filter')
+    }
+  })
+
+  const checkExistence = nameToCheck => {
+    const filteredPersons = persons.filter(person => {
+      return nameToCheck === person.name
+    })
+    return filteredPersons.length === 0
   }
 
   return (
@@ -83,7 +116,10 @@ const App = () => {
         addPerson={addPerson}
       />
       <h2>Numbers</h2>
-      <Persons persons={filteredPersons} />
+      <Persons
+        persons={filteredPersons}
+        deletePerson={deletePerson}
+      />
     </div>
   )
 }
